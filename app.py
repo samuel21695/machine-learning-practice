@@ -11,6 +11,26 @@ X_train, X_test, y_train, y_test = train_test_split(iris_df.drop("iris_species",
 
 # 모델 생성 및 학습
 model = KNeighborsClassifier(n_neighbors=3)
+
+# 에러 해결 코드
+columns_to_convert = ["sepal_length", "sepal_width", "petal_length", "petal_width"]
+
+# 문제 데이터 확인
+print(X_train[columns_to_convert])
+
+# 문제가 있는 행을 찾아 수정 또는 제거
+for index, row in X_train.iterrows():
+    for column in columns_to_convert:
+        if "..." in row[column]:
+            # 수정이 가능한 경우:
+            row[column] = "올바른 숫자 값"
+            # 수정이 불가능한 경우:
+            X_train = X_train.drop(index)  # 행 제거
+            break  # 다음 행으로 이동
+        
+# 문자열 열을 숫자로 변환
+X_train[columns_to_convert] = X_train[columns_to_convert].apply(pd.to_numeric, errors='coerce')
+
 model.fit(X_train, y_train)
 
 # 예측 수행
