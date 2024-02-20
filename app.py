@@ -2,6 +2,7 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.impute import SimpleImputer
 
 # 데이터 불러오기
 iris_df = pd.read_csv("./data/iris.csv")
@@ -15,21 +16,41 @@ model = KNeighborsClassifier(n_neighbors=3)
 # 에러 해결 코드
 columns_to_convert = ["sepal_length", "sepal_width", "petal_length", "petal_width"]
 
-# 문제 데이터 확인
-print(X_train[columns_to_convert])
+# 데이터 전처리: "..." 값을 NaN으로 변환, NaN 값을 평균값으로 대체
+imputer = SimpleImputer(strategy="mean")
+X_train = imputer.fit_transform(X_train)
+X_test = imputer.transform(X_test)
+
+# 데이터 전처리: "..." 값을 숫자 값으로 변환
+X_train_copy = X_train.copy()
+for column in columns_to_convert:
+    X_train_copy[column].replace("...", float('nan'), inplace=True)  # "..." 값을 NaN으로 변환
+
+# Imputation with SimpleImputer
+imputer = SimpleImputer(strategy="mean")
+X_train = imputer.fit_transform(X_train_copy)
+X_test = imputer.transform(X_test)
+
+# Convert to DataFrame and ensure numeric data type
+X_train = pd.DataFrame(X_train, columns=columns_to_convert)
+X_test = pd.DataFrame(X_test, columns=columns_to_convert)
+
+# Check data types (optional)
+print(X_train.dtypes)
 
 # 문제가 있는 행을 찾아 수정 또는 제거
 for index, row in X_train.iterrows():
     for column in columns_to_convert:
-        if "..." in row[column]:
+        if not isinstance(row[column], float):
             # 수정이 가능한 경우:
             row[column] = "올바른 숫자 값"
             # 수정이 불가능한 경우:
             X_train = X_train.drop(index)  # 행 제거
             break  # 다음 행으로 이동
         
-# 문자열 열을 숫자로 변환
-X_train[columns_to_convert] = X_train[columns_to_convert].apply(pd.to_numeric, errors='coerce')
+# 문자열 열을 숫자로 변환 (NaN 값 포함)
+X_train = pd.DataFrame(X_train, columns=columns_to_convert)
+X_test = pd.DataFrame(X_test, columns=columns_to_convert)
 
 model.fit(X_train, y_train)
 
